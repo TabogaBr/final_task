@@ -28,6 +28,17 @@ function TrainingList() {
             field: 'customer', sortable: true, filter: true, width: 180, floatingFilter: true,
             cellRenderer: params => params.value.firstname + ' ' + params.value.lastname
         },
+        {
+            cellRenderer: params =>
+                <Button
+                    size='small'
+                    color='error'
+                    onClick={() => deleteTraining(params)}
+                >
+                    Delete
+                </Button>,
+            width: 120
+        },
     ]);
 
     const getTrainings = () => {
@@ -45,6 +56,22 @@ function TrainingList() {
     useEffect(() => {
         getTrainings();
     }, []);
+
+    const deleteTraining = (params) => {
+        if (window.confirm('Are you sure you want to delete this training?')) {
+            fetch(`http://traineeapp.azurewebsites.net/api/trainings/${params.data.id}`, { method: 'DELETE' })
+                .then(response => {
+                    if (response.ok) {
+                        setOpen(true);
+                        getTrainings();
+                    }
+                    else {
+                        alert('Something went wrong in DELETE request');
+                    };
+                })
+                .catch(err => console.error(err));
+        }
+    };
 
     return (
         <>

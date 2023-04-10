@@ -21,6 +21,17 @@ function CustomerList() {
         { field: 'city', sortable: true, filter: true, width: 130, floatingFilter: true },
         { field: 'email', sortable: true, filter: true, width: 180, floatingFilter: true },
         { field: 'phone', sortable: true, filter: true, width: 180, floatingFilter: true },
+        {
+            cellRenderer: params =>
+                <Button
+                    size='small'
+                    color='error'
+                    onClick={() => deleteCustomer(params)}
+                >
+                    Delete
+                </Button>,
+            width: 120
+        },
     ]);
 
     const getCustomers = () => {
@@ -39,6 +50,22 @@ function CustomerList() {
     useEffect(() => {
         getCustomers();
     }, []);
+
+    const deleteCustomer = (params) => {
+        if (window.confirm('Are you sure you want to delete this customer?')) {
+            fetch(params.data.links[0].href, { method: 'DELETE' })
+                .then(response => {
+                    if (response.ok) {
+                        setOpen(true);
+                        getCustomers();
+                    }
+                    else {
+                        alert('Something went wrong in DELETE request');
+                    };
+                })
+                .catch(err => console.error(err));
+        }
+    };
 
     return (
         <>
