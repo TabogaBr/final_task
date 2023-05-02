@@ -6,18 +6,22 @@ import dayjs from 'dayjs';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import { API_URL } from '../constants';
+import AddTraining from './AddTraining';
 
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-material.css';
 
 function TrainingList() {
     const [trainings, setTrainings] = useState([]);
+    const [customers, setCustomers] = useState([]);
     const [open, setOpen] = useState(false);
+    const [msg, setMsg] = useState('');
 
     const [columnDefs] = useState([
         {
             field: 'date', sortable: true, filter: true, width: 180, floatingFilter: true,
-            cellRenderer: params => dayjs(params.value).format('DD.MM.YYYY hh:mm')
+            cellRenderer: params => dayjs(params.value).format('DD.MM.YYYY HH:mm')
         },
         {
             field: 'duration', sortable: true, filter: true, width: 150, headerName: 'Duration (min)', floatingFilter: true,
@@ -42,7 +46,7 @@ function TrainingList() {
     ]);
 
     const getTrainings = () => {
-        fetch('https://traineeapp.azurewebsites.net/gettrainings')
+        fetch(API_URL + 'gettrainings')
             .then(response => {
                 if (response.ok)
                     return response.json();
@@ -50,6 +54,15 @@ function TrainingList() {
                     alert('Something went wrong in GET request');
             })
             .then(data => setTrainings(data))
+            .catch(err => console.error(err));
+        fetch(API_URL + 'api/customers')
+            .then(response => {
+                if (response.ok)
+                    return response.json();
+                else
+                    alert('Something went wrong in GET request');
+            })
+            .then(data => setCustomers(data.content))
             .catch(err => console.error(err));
     };
 
@@ -59,9 +72,10 @@ function TrainingList() {
 
     const deleteTraining = (params) => {
         if (window.confirm('Are you sure you want to delete this training?')) {
-            fetch(`http://traineeapp.azurewebsites.net/api/trainings/${params.data.id}`, { method: 'DELETE' })
+            fetch(API_URL + `api/trainings/${params.data.id}`, { method: 'DELETE' })
                 .then(response => {
                     if (response.ok) {
+                        setMsg('Training deleted successfully');
                         setOpen(true);
                         getTrainings();
                     }
@@ -73,6 +87,27 @@ function TrainingList() {
         }
     };
 
+    const addTraining = (newTraining) => {
+        fetch(API_URL + 'api/trainings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newTraining)
+        })
+            .then(response => {
+                if (response.ok) {
+                    setMsg('Training added successfully');
+                    setOpen(true);
+                    getTrainings();
+                }
+                else {
+                    alert('Something went wrong in addition ' + response.statusText);
+                };
+            })
+            .catch(err => console.error(err));
+    };
+
     return (
         <>
             <AppBar position="static">
@@ -80,6 +115,7 @@ function TrainingList() {
                     <Typography variant="h6">Trainings</Typography>
                 </Toolbar>
             </AppBar>
+            <AddTraining addTraining={addTraining} customers={customers} />
             <div className="ag-theme-material" style={{ height: 600, width: '90%', margin: 'auto' }}>
                 <AgGridReact
                     rowData={trainings}
@@ -91,7 +127,7 @@ function TrainingList() {
             </div>
             <Snackbar
                 open={open}
-                message="Training deleted successfully"
+                message={msg}
                 autoHideDuration={3000}
                 onClose={() => setOpen(false)}
             />

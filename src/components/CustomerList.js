@@ -5,6 +5,9 @@ import Snackbar from '@mui/material/Snackbar';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import { API_URL } from '../constants';
+import AddCustomer from './AddCustomer';
+import EditCustomer from './EditCustomer';
 
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-material.css';
@@ -12,6 +15,7 @@ import 'ag-grid-community/styles/ag-theme-material.css';
 function CustomerList() {
     const [customers, setCustomers] = useState([]);
     const [open, setOpen] = useState(false);
+    const [msg, setMsg] = useState('');
 
     const [columnDefs] = useState([
         { field: 'firstname', sortable: true, filter: true, width: 130, floatingFilter: true },
@@ -21,6 +25,10 @@ function CustomerList() {
         { field: 'city', sortable: true, filter: true, width: 130, floatingFilter: true },
         { field: 'email', sortable: true, filter: true, width: 180, floatingFilter: true },
         { field: 'phone', sortable: true, filter: true, width: 180, floatingFilter: true },
+        {
+            cellRenderer: params =>
+                <EditCustomer params={params.data} updateCustomer={updateCustomer} />, width: 120
+        },
         {
             cellRenderer: params =>
                 <Button
@@ -35,7 +43,7 @@ function CustomerList() {
     ]);
 
     const getCustomers = () => {
-        fetch('http://traineeapp.azurewebsites.net/api/customers')
+        fetch(API_URL + 'api/customers')
             .then(response => {
                 if (response.ok)
                     return response.json();
@@ -56,6 +64,7 @@ function CustomerList() {
             fetch(params.data.links[0].href, { method: 'DELETE' })
                 .then(response => {
                     if (response.ok) {
+                        setMsg('Customer deleted successfully');
                         setOpen(true);
                         getCustomers();
                     }
@@ -67,6 +76,48 @@ function CustomerList() {
         }
     };
 
+    const addCustomer = (newCustomer) => {
+        fetch(API_URL + 'api/customers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newCustomer)
+        })
+            .then(response => {
+                if (response.ok) {
+                    setMsg('Customer added successfully');
+                    setOpen(true);
+                    getCustomers();
+                }
+                else {
+                    alert('Something went wrong in addition' + response.statusText);
+                };
+            })
+            .catch(err => console.error(err));
+    };
+
+    const updateCustomer = (updatedCustomer, url) => {
+        fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedCustomer)
+        })
+            .then(response => {
+                if (response.ok) {
+                    setMsg('Customer updated successfully');
+                    setOpen(true);
+                    getCustomers();
+                }
+                else {
+                    alert('Something went wrong in update' + response.statusText);
+                };
+            })
+            .catch(err => console.error(err));
+    };
+
     return (
         <>
             <AppBar position="static">
@@ -74,6 +125,7 @@ function CustomerList() {
                     <Typography variant="h6">Customers</Typography>
                 </Toolbar>
             </AppBar>
+            <AddCustomer addCustomer={addCustomer} />
             <div className="ag-theme-material" style={{ height: 600, width: '90%', margin: 'auto' }}>
                 <AgGridReact
                     rowData={customers}
@@ -85,7 +137,7 @@ function CustomerList() {
             </div>
             <Snackbar
                 open={open}
-                message="Customer deleted successfully"
+                message={msg}
                 autoHideDuration={3000}
                 onClose={() => setOpen(false)}
             />
