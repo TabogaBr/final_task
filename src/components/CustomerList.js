@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import Button from '@mui/material/Button';
 import Snackbar from '@mui/material/Snackbar';
@@ -16,6 +16,7 @@ function CustomerList() {
     const [customers, setCustomers] = useState([]);
     const [open, setOpen] = useState(false);
     const [msg, setMsg] = useState('');
+    const gridRef = useRef();
 
     const [columnDefs] = useState([
         { field: 'firstname', sortable: true, filter: true, width: 130, floatingFilter: true },
@@ -118,6 +119,19 @@ function CustomerList() {
             .catch(err => console.error(err));
     };
 
+    const getParams = () => {
+        return {
+            fileName: 'customers.csv',
+            columnKeys: ['firstname', 'lastname', 'streetaddress', 'postcode', 'city', 'email', 'phone'],
+            processCellCallback: function (params) {
+                return params.column.colId === 'firstname' ? '"' + params.value + '"' : params.value;
+            },
+            processHeaderCallback: function (params) {
+                return params.column.colId === 'firstname' ? '"firstname"' : params.column.colId;
+            },
+        };
+    };
+
     return (
         <>
             <AppBar position="static">
@@ -126,8 +140,10 @@ function CustomerList() {
                 </Toolbar>
             </AppBar>
             <AddCustomer addCustomer={addCustomer} />
+            <Button variant='contained' onClick={() => { gridRef.current.api.exportDataAsCsv(getParams()) }}>Export to CSV</Button>
             <div className="ag-theme-material" style={{ height: 600, width: '90%', margin: 'auto' }}>
                 <AgGridReact
+                    ref={gridRef}
                     rowData={customers}
                     columnDefs={columnDefs}
                     pagination={true}
